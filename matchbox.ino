@@ -115,8 +115,9 @@ class SoundMixer
 
       if (current_note >= number_of_notes)
         current_note = 0;
-        
-      TrinketTone(notes[current_note], arp_duration);
+
+      //we don't want a gap, so play for full duraction
+      TrinketTone(notes[current_note], duration[current_note]);
 
       previous_millis = millis();
       playing = true;
@@ -184,14 +185,34 @@ void setup() {
   strip.show();  // Turn all LEDs off ASAP
 }
 
+uint8_t brightness = 200; //0-255
+
 void updateLEDs()
 {
-  static uint32_t next_color = 0x000000;
-  static uint8_t color_increment = 4;
-  next_color += color_increment;
-  for(int i=NUMPIXELS-1; i > 0; --i)
+  static uint8_t next_color[3] = {0,0,0};
+  static int8_t color_increment[3] = {7,5,3};
+
+  for(uint8_t i=0; i<3; ++i)
+  {
+    uint8_t diff = brightness - next_color[i];
+    int8_t inc = color_increment[i];
+    if (inc > 0 && diff < inc)
+    {
+      next_color[i] = brightness;
+      color_increment[i] = -inc;
+    }
+    else if (inc < 0 && -inc >  next_color[i])
+    {
+      next_color[i] = 0;
+      color_increment[i] = -inc;
+    }
+    else
+      next_color[i] += inc;
+  }
+
+  for(uint8_t i=NUMPIXELS-1; i > 0; --i)
     strip.setPixelColor(i, strip.getPixelColor(i-1));
-  strip.setPixelColor(0, next_color);
+  strip.setPixelColor(0, next_color[1], next_color[0], next_color[2]);
   strip.show();
 }
 
