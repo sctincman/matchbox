@@ -43,105 +43,6 @@ ISR(TIMER1_COMPA_vect)
     TCCR1 = 0x90;                    // stop the counter
 }
 
-#define MAX_NOTES 8
-const uint32_t arp_duration = 10; //duration of arpeggio note in ms
-class SoundMixer
-{
-  private:
-    uint16_t notes[MAX_NOTES];
-    uint16_t duration[MAX_NOTES];
-    uint8_t number_of_notes;
-    uint8_t current_note;
-    uint32_t previous_millis;
-    bool playing;
-    
-  public:
-    SoundMixer(): number_of_notes(0), playing(false), current_note(0), previous_millis(0)
-    {
-      
-    }
-
-    int8_t playNote(uint16_t frequency, uint16_t length)
-    {
-      if (number_of_notes >= MAX_NOTES)
-        return -1;
-
-      //check for duplicates, keep longer duration
-      //break once you find larger freq
-      // this is the index of where to insert to maintain order
-      uint8_t i;
-      for(i=0; i<number_of_notes; ++i)
-      {
-        if(notes[i] == frequency)
-        {
-          if (length > duration[i])
-            duration[i] = length;
-          return 1;
-        }
-        else if( notes[i] < frequency )
-          break;
-      }
-
-      //i is now the note's new index, shift the rest as needed
-      for(uint8_t j=number_of_notes; j>i; --j)
-      {
-        notes[j] = notes[j-1];
-        duration[j] = duration[j-1];
-      }
-      notes[i] = frequency;
-      duration[i] = length;
-      ++number_of_notes;
-
-      return 0;
-    }
-
-    void play()
-    {
-
-      if (number_of_notes == 0)
-      {
-        playing = false;
-        return;
-      }
-      uint32_t tone_duration = millis() - previous_millis;
-
-      if (duration[current_note] <= tone_duration)
-        removeNote(current_note);
-      else
-      {
-        duration[current_note] -= tone_duration;
-        ++current_note;
-      }
-
-      if (current_note >= number_of_notes)
-        current_note = 0;
-
-      //we don't want a gap, so play for full duraction
-      TrinketTone(notes[current_note], duration[current_note]);
-
-      previous_millis = millis();
-      playing = true;
-    }
-
-    void removeNote(uint8_t index)
-    {
-      if( index < 0 || index >= number_of_notes)
-        return;
-
-      if (index < number_of_notes-1) //if last note, don't do anything (also bounds check the for loop)
-      {
-        for (uint8_t i=index+1; i<number_of_notes; ++i)
-        {
-          notes[i-1] = notes[i];
-          duration[i-1] = duration[i];
-        }
-      }
-      --number_of_notes;
-    }
-};
-
-SoundMixer mixer = SoundMixer();
-
 //#define FANFARE
 //#define CRYSTAL_GEMS
 #define GIANT_WOMAN
@@ -159,7 +60,7 @@ void playNextNote()
     count = 0;
 
   if(pgm_read_word(&note_pitch[count]) != 0)
-    mixer.playNote(pgm_read_word(&note_pitch[count]), pgm_read_byte(&note_durs[count])*length);
+    TrinketTone(pgm_read_word(&note_pitch[count]), pgm_read_byte(&note_durs[count])*length);
   next_note_delay = pgm_read_byte(&note_durs[count]) * length + tone_space;
 
   ++count;
@@ -179,13 +80,11 @@ void setup() {
   clock_prescale_set(clock_div_1); // Enable 16 MHz on Trinket
 #endif
   pinMode(1, OUTPUT);
-  pinMode(3, INPUT_PULLUP);
-
   strip.begin(); // Initialize pins for output
   strip.show();  // Turn all LEDs off ASAP
 }
 
-uint8_t brightness = 200; //0-255
+uint8_t brightness = 255; //0-255
 
 void updateLEDs()
 {
@@ -220,7 +119,6 @@ const uint32_t led_interval = 10; //min delay in ms before LED routine runs agai
 
 void loop() {
   static uint32_t previous_millis_led = 0; //when LED routine ran last
-  static uint32_t previous_millis_mixer = 0; //when mixer routine ran last
   static uint32_t previous_millis_note = 0; //when tone routine ran last
 
   uint32_t current_millis = millis();
@@ -231,16 +129,9 @@ void loop() {
     updateLEDs();
   }
 
-  if (current_millis - previous_millis_mixer >= arp_duration)
-  {
-    previous_millis_mixer = millis();
-    mixer.play();
-  }
-
   if (current_millis - previous_millis_note >= next_note_delay)
   {
     previous_millis_note = millis();
-    if(digitalRead(3) == LOW  && toggle_count == 0)
-      playNextNote();
+    playNextNote();
   }
 }
