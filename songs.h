@@ -2,8 +2,8 @@
 #include "pitches.h"
 
 #ifdef FANFARE
-const uint16_t notecount = 69;
-const PROGMEM uint8_t note_durs[] = {
+const uint16_t fanfare_notecount = 69;
+const PROGMEM uint8_t fanfare_note_durs[] = {
 	EN, EN, EN, QN, QN, QN,
 	QN, EN, DHN,
 	QN, QN, QN, EN, QN,
@@ -20,7 +20,7 @@ const PROGMEM uint8_t note_durs[] = {
 	QN, QN, QN, EN, 136,
 };
 
-const PROGMEM uint16_t note_pitch[] = {
+const PROGMEM uint16_t fanfare_note_pitch[] = {
   NOTE_F5, NOTE_F5, NOTE_F5, NOTE_F5, NOTE_CS5, NOTE_DS5,
 	NOTE_F5, NOTE_DS5, NOTE_F5,
 	NOTE_C5, NOTE_B4, NOTE_C5, NOTE_B4, NOTE_DS5,
