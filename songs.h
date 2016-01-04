@@ -1,7 +1,6 @@
 #include <avr/pgmspace.h>         // needed for PROGMEM
 #include "pitches.h"
 
-#ifdef FANFARE
 const uint16_t fanfare_notecount = 69;
 const PROGMEM uint8_t fanfare_note_durs[] = {
 	EN, EN, EN, QN, QN, QN,
@@ -36,7 +35,6 @@ const PROGMEM uint16_t fanfare_note_pitch[] = {
 	NOTE_DS5, NOTE_D5, NOTE_E5, NOTE_D5, NOTE_D5,
   NOTE_C5, NOTE_B4, NOTE_C5, NOTE_DS5, NOTE_F5,
 };
-#endif //FANFARE
 
 #ifdef CRYSTAL_GEMS
 const uint16_t notecount = 58;
