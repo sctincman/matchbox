@@ -1,0 +1,7 @@
+An Arduino program for a matchbox contained infinity mirror.
+
+Fairly simple: controls a series of DotStar LEDs contained in the mirror portion, as well as playing a song on the piezo buzzer.
+
+The songs are defined in "songs.h" as as two static progmem arrays: note_durs, and note_pitch (which are the note duration and pitch respectively).
+
+This uses the "TrinkeTone" procedures published elsewhere (http://w8bh.net/avr/TrinketTone.pdf)
