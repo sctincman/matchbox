@@ -1,71 +1,12 @@
 #include <Adafruit_DotStar.h>
-#include <avr/pgmspace.h>         // needed for PROGMEM
-#include <SPI.h>
+//#include <avr/pgmspace.h>         // needed for PROGMEM
+//#include <SPI.h>
 
-/*
-  These defines control which song is included
-  Un-comment the one you wish to use as the main song, and comment out the other(s)
-  NOTE: For the larger book version, the FF "fanfare" is included as a second song
-  and prefixed by "fanfare_"
- */
-
-//#define CRYSTAL_GEMS
-#define GIANT_WOMAN
-
-#include "songs.h" // include file with song definitions
-
-const uint32_t tone_space = 25; // min spacing in ms between subsequent notes
-uint32_t next_note_delay = 25; // min delay in ms before tone routine runs again
-volatile bool alternate_song = false; // flag that determines which song to play
-
-#define PIEZO_PIN 12 // The pulse-width-modulation pin is the piezo buzzer attached to
-
-/*
-  This routine will play the next note in the sequence, and set the proper delay before it
-  should be called again.
-  Note: static variables are initialized once, and retain value between calls.
- */
-void playNextNote() 
-{
-  static uint32_t length = 20; // duration of a 64th note
-  static uint16_t count = 0; // the current note to play
-
-  // Are we playing the alternate song? Then read from "fanfare_note_[durs/pitch]"
-  // Otherwise, read from the default song
-  if (alternate_song)
-  {
-    if (count >= fanfare_notecount) // have we reached the end of the song? then reset the counter
-      count = 0;
-
-    noTone(PIEZO_PIN); // make sure we free the pin to be used again
-
-    // read the current note, if it's not a rest note, then play the desired pitch on the piezo pin for the specified duration
-    if (pgm_read_word(&fanfare_note_pitch[count]) != REST)
-      tone(PIEZO_PIN, pgm_read_word(&fanfare_note_pitch[count]), pgm_read_byte(&fanfare_note_durs[count]) * length);
-
-    // set the delay before this should be called again by the length of the note, and the spacing between notes
-    next_note_delay = pgm_read_byte(&fanfare_note_durs[count]) * length + tone_space;
-  }
-  else
-  {
-    if (count >= notecount)
-      count = 0;
-
-    noTone(PIEZO_PIN);
-    if (pgm_read_word(&note_pitch[count]) != 0)
-      tone(PIEZO_PIN, pgm_read_word(&note_pitch[count]), pgm_read_byte(&note_durs[count])*length);
-    next_note_delay = pgm_read_byte(&note_durs[count]) * length + tone_space;
-  }
-
-  ++count; //increment the counter, so the next note is used in the next call
-}
-
-
-#define NUMPIXELS 11 // Number of RGB LEDs in the strip
+#define NUMPIXELS 8 // Number of RGB LEDs in the strip
 
 Adafruit_DotStar strip = Adafruit_DotStar(NUMPIXELS, DOTSTAR_BRG); //initialize the strip, using hardware SPI
 
-uint8_t brightness = 128; //0-255, scales the intensity of the LEDs
+uint8_t brightness = 200; //0-255, scales the intensity of the LEDs
 volatile bool reset_leds = 0; // flag to determine if LEDs should be blanks
 
 /*
@@ -127,10 +68,8 @@ void updateLEDs()
 }
 
 // which pins the buttons are attached to
-#define BUTTON1_PIN 0
-#define BUTTON2_PIN 2
-#define BUTTON3_PIN 3
-
+#define BUTTON_PIN 4
+#define BUTTON_INT 4
 /* Interrupt routine
    We attach this to a button interrupt later, whenever button is pressed, this routine is called
    Simply sets the "reset_leds" flag to true.
@@ -153,11 +92,8 @@ void setup() {
   /* Change the first button to "input, with internal pullup"
      This means the pin will be held at HIGH voltage, and we can trigger it by connecting to LOW/"ground"
    */
-  pinMode(BUTTON1_PIN, INPUT_PULLUP);
-  attachInterrupt(2, resetLEDs, FALLING); //interrupt 2 is the corresponding intr for PIN 0..., set to run the interrupt once when changes from HIGH to LOW (aka, will run when button is pressed) 
-
-  pinMode(BUTTON2_PIN, INPUT_PULLUP);
-  pinMode(BUTTON3_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  //attachInterrupt(BUTTON_INT, resetLEDs, FALLING); //interrupt 2 is the corresponding intr for PIN 0..., set to run the interrupt once when changes from HIGH to LOW (aka, will run when button is pressed) 
 }
 
 /*
@@ -172,7 +108,6 @@ const uint32_t button_interval = 20;
  */
 void loop() {
   static uint32_t previous_millis_led = 0; //when LED routine ran last
-  static uint32_t previous_millis_note = 0; //when tone routine ran last
   static uint32_t previous_millis_button = 0; //when button routine ran last
 
   uint32_t current_millis = millis(); //what is the current time?
@@ -184,20 +119,10 @@ void loop() {
     updateLEDs();
   }
 
-  if (current_millis - previous_millis_note >= next_note_delay)
-  {
-    previous_millis_note = millis();
-    playNextNote();
-  }
-
   if (current_millis - previous_millis_button >= button_interval)
   {
     previous_millis_button = millis();
-    if (digitalRead(BUTTON2_PIN) == LOW)
-      reset_leds = true;
-    else if (digitalRead(BUTTON3_PIN) == LOW)
-      alternate_song = true;
-    else
-      alternate_song = false;
+    if (digitalRead(BUTTON_PIN) == LOW)
+      reset_leds = !reset_leds;
   }
 }
